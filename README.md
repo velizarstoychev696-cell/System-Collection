@@ -1,4 +1,4 @@
-# Systems-Collection
+# System-Collection
 This Repository will contain a sporatic collection of Systems built-from-scratch, and relying soly on the Standard C++17 Library.
 Currently implemented Systems are:
 
@@ -10,6 +10,6 @@ Currently implemented Systems are:
 
 4. A Rhythm Chart Engine - Storing each Note in only 64 bits, capable handling of Long Notes, Mines, Misses, Ghost Taps, Score Ranks, Bot-Play, and automatically keep track of the "Chord" Patterns.
 
-5. A Time-Queue Container - Capable of handling any "Temporary Access Event", given a time window, by only allowing access to each element within its own window of time.
+5. A Time Queue Container - Capable of handling any "Temporary Access Event", given a time window, by only allowing access to each element within its own window of time.
 
 More to come eventually.
