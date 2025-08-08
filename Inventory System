@@ -1,0 +1,34 @@
+///---------------------------------------------------------------------------------
+///
+/// --- Inventory System ---
+///
+/// Item ID: [8 = Generic Type] - [24 = Unique Item ID] // The generic type is the position of a bit in Layer 1 of the Crafting System
+///
+
+struct Item { uint32_t Stack, ID, Quantity; /// Stack size, Item ID, Current Quantity / Tool Durability / Uses
+	unordered_map<uint16_t, uint16_t> M; /// Get creative with this
+
+	Item(uint32_t s, uint32_t id, uint32_t quantity, unordered_map<uint16_t, uint16_t> m) : Stack(s), ID(id), Quantity(quantity), M(m) {}
+	Item() : Stack(0), ID(0), Quantity(0), M({}) {}
+
+	/// Inventory Management - Modifies the original Item's Quantity and sometimes returns a secondary Item
+	vector<Item> Split_Half() { Item e(Stack, ID, Quantity >>= 1, M); Quantity += Quantity & 1;
+		if(e.Check_Real()) { return {e}; } return {};
+	} vector<Item> Split_One() { if(Check_Real()){ Item e(Stack, ID, 1, M); Quantity--;
+		return {e};
+	} return {}; }
+
+	vector<Item> Add_All(Item i) { if(Match_ID(i)) i.Quantity = (Quantity += i.Quantity) - Stack;
+		if(Quantity > Stack) { Quantity = Stack; return {i}; } return {};
+	} vector<Item> Add_One(Item i) { bool b = Match_ID(i) && Quantity < Stack;
+		Quantity += b; i.Quantity -= b; if(i.Check_Real()) { return {i}; } return {};
+	}
+
+	/// General Checks
+	bool Check_Real() const { return ID != 0 && Quantity != 0 && Stack != 0 && M.size() != 0; }
+	bool Match_Meta(Item& i) const { return M == i.M; } bool Match_ID(Item& i) const { return ID == i.ID; }
+
+	/// File Read / Write
+	void Serialize(Serializer& s) const { s.Write(Stack); s.Write(ID); s.Write(Quantity); s.Write(M); }
+    void Deserialize(Serializer& s) { Stack = s.Read<uint32_t>(); ID = s.Read<uint32_t>(); Quantity = s.Read<uint32_t>(); M = s.Read<unordered_map<uint16_t, uint16_t>>(); }
+};
