@@ -1,0 +1,18 @@
+template<typename T>
+struct Time_Queue { Time_Queue() = default;
+    map<Duration, vector<T>> Storage[2];
+    unordered_set<T> Accessible;
+    Duration Start;
+
+    void Add_Start(Duration d, T& t) { Storage[0][d].push_back(t); }
+    void Add_End(Duration d, T& t) { Storage[1][d].push_back(t); }
+
+    unordered_set<T> Get() { for(auto& S : Storage) if(!S.empty()) if(Time_Now() - Start >= S.begin()->first) { auto& V = S.begin()->second;
+  		switch(S == Storage[1]) {
+  			case 0: Accessible.insert(V.begin(), V.end());
+  			case 1: for(T& t : V) Accessible.erase(t);
+  		} S.erase(S.begin());
+  	} return Accessible; }
+
+    bool empty() { return Storage[1].empty(); }
+};
