@@ -1,0 +1,86 @@
+template <typename, typename = void> struct is_serializable : false_type {};
+
+struct Serializer { istream* is = nullptr; ostream* os = nullptr;
+    vector<uint32_t> Ls;
+    size_t Index = 0;
+    streampos Ls_pos;
+
+    Serializer(ostream& out) : os(&out) { Ls_pos = os->tellp(); uint32_t zero = 0;
+        write_raw(&zero, sizeof(uint32_t));
+    } ~Serializer() { if(os) finalize_Ls(); }
+
+    Serializer(istream& in) : is(&in) { uint32_t count;
+        read_raw(&count, sizeof(uint32_t)); Ls.resize(count);
+        for(uint32_t& len : Ls) read_raw(&len, sizeof(uint32_t));
+    }
+
+    void finalize_Ls() { streampos end = os->tellp(); os->seekp(Ls_pos);
+        uint32_t count = static_cast<uint32_t>(Ls.size()); write_raw(&count, sizeof(count));
+        for(uint32_t len : Ls) write_raw(&len, sizeof(len));
+        os->seekp(end);
+    }
+
+    void write_raw(const void* data, size_t len) { os->write(reinterpret_cast<const char*>(data), len); }
+	  void read_raw(void* data, size_t len) { is->read(reinterpret_cast<char*>(data), len); }
+
+    template <typename T> void Write(const T& t) { if constexpr (is_trivially_copyable_v<T> && !is_pointer_v<T>) {
+          write_raw(&t, sizeof(T));
+      } else if constexpr (is_same_v<T, string>) { Ls.push_back(t.size());
+          write_raw(t.data(), t.size());
+      } else if constexpr (is_array<T>::value || is_vector<T>::value) { Ls.push_back(t.size());
+          for(const auto& e : t) Write(e);
+      } else if constexpr (is_set<T>::value) { Ls.push_back(t.size());
+          for(const auto& e : t) { Write(e); }
+      } else if constexpr (is_map<T>::value) { Ls.push_back(t.size());
+          for(const auto& [k, v] : t) { Write(k); Write(v); }
+      } else if constexpr (is_pair<T>::value) {
+          Write(t.first); Write(t.second);
+      } else if constexpr (is_serializable<T>::value) {
+        t.serialize(*this);
+  		} else static_assert(always_false<T>::value, "Unsupported type for Serializer: no serialize() / deserialize()");
+    }
+
+    template <typename T> T Read() { if constexpr (is_trivially_copyable_v<T> && !is_pointer_v<T>) { T t;
+          read_raw(&t, sizeof(T));
+          return t;
+      } else if constexpr (is_same_v<T, string>) { uint32_t len = get_length(); string S(len, '\0');
+          read_raw(&S[0], len);
+          return S;
+      } else if constexpr (is_array<T>::value || is_vector<T>::value) { T L;
+          for(size_t i = 0; i < get_length(); i++) L[i] = Read<typename T::value_type>();
+          return L;
+      } else if constexpr (is_set<T>::value) { T S;
+          for(size_t i = 0; i < get_length(); i++) S.insert(Read<typename T::value_type>());
+          return S;
+      } else if constexpr (is_map<T>::value) { T M;
+          for(size_t i = 0; i < get_length(); i++) M.emplace(Read<typename T::key_type>(), Read<typename T::mapped_type>());
+          return M;
+      } else if constexpr (is_pair<T>::value) {
+        return make_pair(Read<typename T::first_type>(), Read<typename T::second_type>());
+      } else if constexpr (is_serializable<T>::value) {
+  			return T::deserialize(*this);
+  		} else static_assert(always_false<T>::value, "Unsupported type for Serializer: no serialize() / deserialize()");
+  	}
+
+private:
+    uint32_t get_length() { if(Index >= Ls.size()) { throw runtime_error("Not enough lengths in table"); } return Ls[Index++]; }
+
+    template <typename T> struct always_false : false_type {};
+
+    template <typename T> struct is_vector : false_type {};
+    template <typename T, typename A> struct is_vector<vector<T, A>> : true_type {};
+
+    template <typename T> struct is_map : false_type {};
+    template <typename K, typename V, typename H, typename E, typename A> struct is_map<unordered_map<K, V, H, E, A>> : true_type {};
+
+    template <typename T> struct is_set : false_type {};
+    template <typename T> struct is_set<set<T>> : true_type {};
+
+    template <typename T> struct is_pair : false_type {};
+    template <typename T1, typename T2> struct is_pair<pair<T1, T2>> : true_type {};
+};
+
+template <typename T> struct is_serializable<T, void_t<
+    decltype(declval<T>().Serialize(declval<Serializer&>())),
+    decltype(T::Deserialize(declval<Serializer&>()))
+>> : true_type {};
