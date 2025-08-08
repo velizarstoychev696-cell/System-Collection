@@ -8,8 +8,8 @@ Currently implemented Systems are:
 
 3. An Inventory System - Designed to be useable with or without the Crafting Class, this System allows for basic Inventory Management, Unique & General Item IDing, Stack Limiting and optional Metadata.
 
-4. A Rhythm Chart Engine - Storing each Note in only 64 bits, capable handling Long Notes, Mines, Misses, Ghost Taps, Score Ranks, Bot-Play, and automatically keep track of the "Chord" Patterns.
+4. A Rhythm Chart Engine - Storing each Note in only 64 bits, capable handling of Long Notes, Mines, Misses, Ghost Taps, Score Ranks, Bot-Play, and automatically keep track of the "Chord" Patterns.
 
-5. A Time-Queue Container - Capable of handling any "Temporary Access Event", given a time window, by only allowing access to each element within its window of time.
+5. A Time-Queue Container - Capable of handling any "Temporary Access Event", given a time window, by only allowing access to each element within its own window of time.
 
 More to come eventually.
