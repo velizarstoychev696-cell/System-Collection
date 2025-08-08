@@ -1,0 +1,37 @@
+#include <unordered_map> #include <map>
+#include <unordered_set> #include <set>
+#include <string>
+#include <sstream>
+#include <stack>
+#include <vector>
+#include <iostream>
+#include <array>
+#include <algorithm>
+#include <functional>
+#include <utility>
+#include <random>
+#include <fstream>
+#include <deque>
+#include <mmsystem.h>
+#include <numeric>
+#include <thread>
+#include <mutex>
+#include <condition_variable>
+#include <atomic>
+#include <initializer_list>
+#include <any>
+#include <omp.h>
+#include <stdarg.h>
+#include <queue>
+#include <optional>
+#include <ctime>
+#include <cmath>
+#include <cstddef>
+#include <cctype>
+#include <cstdint>
+#include <cstdio>
+#include <type_traits>
+
+using namespace std;
+using namespace chrono;
+using namespace chrono_literals;
