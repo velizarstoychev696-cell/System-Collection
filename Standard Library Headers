@@ -1,5 +1,7 @@
-#include <unordered_map> #include <map>
-#include <unordered_set> #include <set>
+#include <unordered_map>
+#include <map>
+#include <unordered_set>
+#include <set>
 #include <string>
 #include <sstream>
 #include <stack>
@@ -35,3 +37,26 @@
 using namespace std;
 using namespace chrono;
 using namespace chrono_literals;
+
+///---------------------------------------------------------------------------------
+///--- Shorthands ---
+
+using Duration = steady_clock::duration;
+Duration Time_Now(){ return steady_clock::now().time_since_epoch(); }
+
+///---------------------------------------------------------------------------------
+///--- Hashings ---
+
+namespace std {
+    template <typename K, size_t N>
+    struct hash<array<K, N>> { size_t operator()(const array<K, N>& A) const { size_t h; for(const K& e : A) h = hash<K>()(e + h); return h; }};
+
+  	template <typename K>
+    struct hash<vector<K>> { size_t operator()(const vector<K>& V) const { size_t h; for(const K& e : V) h = hash<K>()(e + h); return h; }};
+
+    template <typename K>
+    struct hash<set<K>> { size_t operator()(const set<K>& S) const { size_t h; for(const K& e : S) h = hash<K>()(e + h); return h; }};
+
+    template <typename U, typename V>
+    struct hash<pair<U, V>> { size_t operator()(const pair<U, V>& P) const { return hash<V>()(P.second + hash<U>()(P.first)); }};
+}
