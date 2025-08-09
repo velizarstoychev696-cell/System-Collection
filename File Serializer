@@ -21,7 +21,7 @@ struct Serializer { istream* is = nullptr; ostream* os = nullptr;
     }
 
     void write_raw(const void* data, size_t len) { os->write(reinterpret_cast<const char*>(data), len); }
-	  void read_raw(void* data, size_t len) { is->read(reinterpret_cast<char*>(data), len); }
+	void read_raw(void* data, size_t len) { is->read(reinterpret_cast<char*>(data), len); }
 
     template <typename T> void Write(const T& t) { if constexpr (is_trivially_copyable_v<T> && !is_pointer_v<T>) {
           write_raw(&t, sizeof(T));
