@@ -1,5 +1,4 @@
 ///---------------------------------------------------------------------------------
-///
 /// --- Inventory System ---
 ///
 /// Item ID: [8 = Generic Type] - [24 = Unique Item ID] // The generic type is the position of a bit in Layer 1 of the Crafting System
