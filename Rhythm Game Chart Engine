@@ -1,7 +1,5 @@
 ///---------------------------------------------------------------------------------
-///
-/// --- Rhythm Game Chart Engine ---
-///
+///--- Rhythm Game Chart Engine ---
 
 struct General_Chart { set<int8_t> Ranks;
 	array<map<int, int>, 1> Notes;
