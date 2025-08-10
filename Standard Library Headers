@@ -42,10 +42,17 @@ using namespace chrono_literals;
 ///--- Shorthands ---
 
 using Duration = steady_clock::duration;
+
 Duration Time_Now(){ return steady_clock::now().time_since_epoch(); }
+
+template <typename K>
+K Clamp(K i, K upper, K lower){ i > upper ? upper : (i < lower ? lower : i); }
 
 ///---------------------------------------------------------------------------------
 ///--- Hashings ---
+
+template<typename K> struct least_first { bool operator()(const K& l, const K& r) const { return l < r; } };
+template<typename K> struct least_last { bool operator()(const K& l, const K& r) const { return l > r; } };
 
 namespace std {
     template <typename K, size_t N>
@@ -57,6 +64,9 @@ namespace std {
     template <typename K>
     struct hash<set<K>> { size_t operator()(const set<K>& S) const { size_t h; for(const K& e : S) h = hash<K>()(e + h); return h; }};
 
+    template <>
+    struct hash<Duration> { size_t operator()(const Duration& d) const noexcept { return hash<Duration::rep>()(d.count()); } };
+
     template <typename U, typename V>
-    struct hash<pair<U, V>> { size_t operator()(const pair<U, V>& P) const { return hash<V>()(P.second + hash<U>()(P.first)); }};
+    struct hash<pair<U, V>> { size_t operator()(const pair<U, V>& P) const { return hash<V>()(P.second) ^ hash<U>()(P.first); }};
 }
