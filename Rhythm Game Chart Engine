@@ -1,5 +1,5 @@
 ///---------------------------------------------------------------------------------
-///--- Rhythm Game Chart Engine ---
+///--- Rhythm Game-ass Chart Engine ---
 
 struct General_Chart { set<int8_t> Ranks;
 	array<map<int, int>, 1> Notes;
@@ -20,9 +20,9 @@ struct Chart : General_Chart { set<int8_t> Ranks; // Note Rankings as beat offse
 
 	/// Score: -2 = Mine, -1 = Ghost Tap (Too Early), 0 = Holding, 1 = Missed Note (Too Late), 2 = Nothing yet;
 	/// Score: Rank + 3 = Early/Late Score; (Closer to 0 means better, but -2 through 2 are taken)
-    int8_t Press(uint8_t Lane, uint32_t Time, uint8_t I, float Leniency) { int P = Current[Lane][I]->first, G = Time - max(P, -P) - Hold[Lane][I];
+    int8_t Press(uint8_t Lane, uint32_t Time, uint8_t I, double Leniency) { int P = Current[Lane][I]->first, G = Time - max(P, -P) - Hold[Lane][I];
     	int8_t Score = 0, C = P < 0 ? *Ranks.begin() : -(*prev(Ranks.end()));
-    	bool H = Hold[Lane][I] == ceil(Leniency * Current[Lane][I]->second), B = P < 0, T = G > -C; // Holding?, Bomb?, Too Early/Late?
+    	bool H = Hold[Lane][I] == ceil(Clamp<double>(Leniency, 1, 0) * Current[Lane][I]->second), B = P < 0, T = G > -C; // Holding?, Bomb?, Too Early/Late?
     	switch((G < C) ^ T ? H * (B + 1) : 3 + T) { case 0: Hold[Lane][I]++; return 0;
 			case 1: P++; for(int8_t r : Ranks) { if(max(G, -G) <= r && r >= 0) { Score = r + 3; } else break; } Hold[Lane][I] = 0; return Score;
 			case 2: P++; return -2;
@@ -53,12 +53,12 @@ template<bool Track_Chords = true> struct Chart_Engine { double Leniency = 0.8; 
 	void Reset_Progress(size_t Index, uint8_t I){ General_Chart GC = Charts.at(Index); GC.Hold = {};
 		for(uint8_t l = 0; l < GC.Args(0); l++) GC.Current[l][I] = GC.Notes[l].begin();
 	}
-	
+
 	void Record_To_File(const string& path) { ofstream ofs(path, ios::binary);
 		Serializer S(ofs);
 		S.Write(Charts);
 	}
-	
+
 	void Load_From_File(const string& path) { ifstream ifs(path, ios::binary);
 		Serializer S(ifs);
 		Charts = S.Read<vector<General_Chart>>();
