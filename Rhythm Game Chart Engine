@@ -1,15 +1,22 @@
 ///---------------------------------------------------------------------------------
-///--- Rhythm Game-ass Chart Engine ---
+///--- Rhythm Game Chart Engine ---
 
+/// Helps ignore the template of Chart when stored in the same container
 struct General_Chart { set<int8_t> Ranks;
-	array<map<int, int>, 1> Notes;
-	array<array<uint16_t, 1>, 1> Hold;
 	array<array<map<int, int>::iterator, 1>, 1> Current;
+	array<array<uint16_t, 1>, 1> Hold;
+	array<map<int, int>, 1> Notes;
+
+	double Long_Note_Leniency = 0.8;
+	uint8_t SO, JO; /// Extra Stair & Jack Offsets
+
+	map<int, uint8_t> Stairs, Jacks;
+	map<int, set<uint8_t>> Chords;
+	set<int> Mines;
+
 	int8_t Press(const uint8_t Lane, const uint32_t Time, const uint8_t I){ return I; }
 	array<int8_t, 1> BotTap(const uint32_t Time, const uint8_t I){ return {}; }
 	uint32_t Args(uint8_t i) const { return i; }
-	void Serialize(Serializer& s) const {}
-    static void Deserialize(Serializer& s) { return ; }
 };
 
 template<uint8_t Lanes = 4, uint32_t BPS = 32, uint8_t Instances = 1> // How many Keys, How many equidistant Notes per second are allowed, How many times the same chart is played at once
@@ -28,7 +35,7 @@ struct Chart : General_Chart { set<int8_t> Ranks; // Note Rankings as beat offse
 			case 2: P++; return -2;
 			case 3: P++; Press(Lane, Time); return 1; /// Recursion is indeed finite, dummy.
 			case 4: return -1;
-	}} uint32_t Args(uint8_t i) const { switch(i){ case 0: return Lanes; case 1: return BPS; case 2: return Instances; } }
+	}} uint32_t Args(uint8_t i) const { switch(i) { case 0: return Lanes; case 1: return BPS; case 2: return Instances; } }
 	// To "Hold" Press() needs to be repeatedly called, but only while Score = 0.
 
 	/// Reads the Chart perfectly. (Can help with the timing of the visuals, and is literally Bot-Play)
@@ -37,20 +44,47 @@ struct Chart : General_Chart { set<int8_t> Ranks; // Note Rankings as beat offse
 			Result[l] = 2; Hold[l][I] = 0;
 	} else { Result[l] = 1; Hold[l][I]++; } return Result; }
 
-	void Serialize(Serializer& s) const { s.Write(Ranks); s.Write(Notes); }
-    void Deserialize(Serializer& s) { Ranks = s.Read<set<int8_t>>(); Notes = s.Read<array<map<int, int>, Lanes>>(); }
-};
+	void Serialize(Serializer& s) const { s.Write(Ranks); s.Write(Notes); s.Write(Jacks); s.Write(Chords); s.Write(Stairs); s.Write(Mines); }
+    void Deserialize(Serializer& s) { Ranks = s.Read<set<int8_t>>();
+		Notes = s.Read<array<map<int, int>, Lanes>>();
+		Chords = s.Read<map<int, set<uint8_t>>>();
+		Stairs = s.Read<map<int, set<uint8_t>>>();
+		Jacks  = s.Read<map<int, uint8_t>>();
+		Mines  = s.Read<set<int>>();
+    }
+}; /// Handles a full Rhythm Game Chart, intended for keyboard
 
-template<bool Track_Chords = true> struct Chart_Engine { double Leniency = 0.8; /// General Precision Leniency
-	vector<map<int, vector<uint8_t>>> Chords;
+template<bool Track_Patterns = true> struct Chart_Engine {
 	vector<General_Chart> Charts;
 
-	General_Chart& Add_Note(size_t Index, uint8_t Lane, int Position, int Length = 0) { General_Chart GC = Charts.at(Index);
-		if(Lane < GC.Args(0)) { GC.Notes[Lane].emplace(Position, Length); Chords.resize(Charts.size());
-			if(Track_Chords) Chords.at(Index)[Position].push_back(Lane);
-	} return GC; }
+	void Add_Note(size_t Index, uint8_t Lane, int Position, int Length = 0) { auto& GC = Charts.at(Index);
+		GC.Notes.at(Lane).emplace(Position, Length);
+		if(Track_Patterns) { GC.Chords[Position].insert(Lane);
+			for(int8_t s = 1; s <= max(GC.SO, GC.JO) + 1; s++) { if(GC.Stairs[Position] != 0 && GC.Jacks[Position] != 0) break;
+				auto& P = { GC.Chords.find(Position - s), GC.Chords.find(Position + s) };
+				for(auto& p : P) if(p != GC.Chords.end()) switch((p->second.find(Lane) != p->second.end()) + ((p->second.size() > 0) << 1)) {
+					case 1: GC.Jacks[Position] = s <= GC.JO ? s : 0;
+					case 2: GC.Stairs[Position] = s <= GC.SO ? s : 0;
+					case 3: GC.Stairs[Position] = s <= GC.SO ? s : 0;
+			} } if(Position < 0) GC.Mines.insert(Position);
+	}	} /// This works well with a Chart Editing GUI
 
-	void Reset_Progress(size_t Index, uint8_t I){ General_Chart GC = Charts.at(Index); GC.Hold = {};
+	void Remove_Note(size_t Index, uint8_t Lane, int Position) { auto& GC = Charts.at(Index);
+		GC.Notes[Lane].erase(Position);
+		GC.Chords[Position].erase(Lane);
+		GC.Mines.erase(Position);
+		GC.Jacks.erase(Position);
+		auto J = GC.Jacks.find(Position)--;
+		if(J != GC.Jacks.end()) J->second = 0;
+		if(GC.Chords[Position].size()) { GC.Stairs.erase(Position); GC.Chords.erase(Position); }
+	}
+
+	void Set_Leniency(size_t Index, double Long, uint8_t Jack, uint8_t Stair) { auto& GC = Charts.at(Index); auto N = GC.Notes;
+		GC.Notes = {}; GC.Jacks.clear(); GC.Mines.clear(); GC.Chords.clear(); GC.Stairs.clear();
+		for(uint8_t i = 0; i < N.size(); i++) for(auto it = N[i].begin(); it != N[i].end(); it++) Add_Note(Index, i, it->first, it->second);
+	}
+
+	void Reset_Progress(size_t Index, uint8_t I){ auto& GC = Charts.at(Index); GC.Hold = {};
 		for(uint8_t l = 0; l < GC.Args(0); l++) GC.Current[l][I] = GC.Notes[l].begin();
 	}
 
