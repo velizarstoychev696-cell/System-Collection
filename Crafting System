@@ -34,26 +34,26 @@ struct uint256_t { array<uint64_t, 4> Value;
 using Recipe_Storage = unordered_map<uint256_t, unordered_map<uint256_t, vector<Item>>>;
 
 template<uint16_t Slots> struct Station { Recipe_Storage U, O;
-	array<Item, Slots> Grid;
+	map<uint16_t, Item> Grid;
 
 	vector<Item> Craft() { size_t j; uint256_t L, Lo, Lu; set<uint32_t> Uniques; hash<uint32_t> h;
-		for(auto i: Grid) { Uniques.insert(i.ID); L.Set_One(i.ID >> 24); Lu += h(i.ID) * i.Quantity; }
-		for(auto u: Uniques) { uint256_t l; for(auto i: Grid){ (l *= Uniques.size()) += j & (i.ID == u); } Lo += l; }
+		for(auto [s, i]: Grid) { Uniques.insert(i.ID); L.Set_One(i.ID >> 24); Lu += h(i.ID) * i.Quantity; }
+		for(auto u: Uniques) { uint256_t l; for(auto [s, i]: Grid){ (l *= Uniques.size()) += j & (i.ID == u); } Lo += l; }
 		if(O.find(L) != O.end() && U.find(L) != U.end()) {
 			switch((O[L].find(Lo) != O[L].end()) + ((U[L].find(Lu) != U[L].end()) << 1)) { default: return U[L][Lu];
 				case 0: return {}; case 1: return O[L][Lo];
 	}	}	}
 
 	void Add_Grid(uint8_t Slot, Item i) { Grid[Slot] = i; Craft(); }
-	void Remove_Grid(uint8_t Slot) { Grid[Slot] = Item(); Craft(); }
+	void Remove_Grid(uint8_t Slot) { Grid.erase(Slot); Craft(); }
 
-	void Add_Ordered_Recipe(array<Item, Slots> Input, vector<Item> Output) { size_t j; uint256_t L, Lo; set<uint32_t> Uniques;
-		for(auto i: Input) { Uniques.insert(i.ID); L.Set_One(i.ID >> 24); }
-		for(auto u: Uniques) { uint256_t l; for(auto i: Input) (l *= Uniques.size()) += j & (i.ID == u); Lo += l; } O[L][Lo] = Output;
+	void Add_Ordered_Recipe(map<uint16_t, Item> Input, vector<Item> Output) { size_t j; uint256_t L, Lo; set<uint32_t> Uniques;
+		for(auto [s, i]: Input) { Uniques.insert(i.ID); L.Set_One(i.ID >> 24); }
+		for(auto u: Uniques) { uint256_t l; for(auto [s, i]: Input) (l *= Uniques.size()) += j & (i.ID == u); Lo += l; } O[L][Lo] = Output;
 	}
 
-	void Add_Unordered_Recipe(array<Item, Slots> Input, vector<Item> Output) { uint256_t L, Lu; hash<uint32_t> h;
-		for(auto i: Input) { L.Set_One(i.ID >> 24); Lu += h(i.ID) * i.Quantity; } U[L][Lu] = Output;
+	void Add_Unordered_Recipe(map<uint16_t, Item> Input, vector<Item> Output) { uint256_t L, Lu; hash<uint32_t> h;
+		for(auto [s, i]: Input) { L.Set_One(i.ID >> 24); Lu += h(i.ID) * i.Quantity; } U[L][Lu] = Output;
 	}
 
 	/// Only use the map Keys (Values don't matter for casual use)
