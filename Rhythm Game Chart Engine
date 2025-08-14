@@ -81,7 +81,7 @@ template<bool Track_Patterns = true> struct Chart_Engine {
 
 	void Set_Leniency(size_t Index, double Long, uint8_t Jack, uint8_t Stair) { auto& GC = Charts.at(Index); auto N = GC.Notes;
 		GC.Notes = {}; GC.Jacks.clear(); GC.Mines.clear(); GC.Chords.clear(); GC.Stairs.clear();
-		for(uint8_t i = 0; i < N.size(); i++) for(auto it = N[i].begin(); it != N[i].end(); it++) Add_Note(Index, i, it->first, it->second);
+		for(uint8_t Lane = 0; Lane < N.size(); Lane++) for(auto [p, l] : N[Lane]) Add_Note(Index, Lane, p, l);
 	}
 
 	void Reset_Progress(size_t Index, uint8_t I){ auto& GC = Charts.at(Index); GC.Hold = {};
