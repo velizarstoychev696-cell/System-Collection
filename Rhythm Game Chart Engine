@@ -10,8 +10,8 @@ struct General_Chart { set<int8_t> Ranks;
 	double Long_Note_Leniency = 0.8;
 	uint8_t SO, JO; /// Extra Stair & Jack Offsets
 
-	map<int, uint8_t> Stairs, Jacks;
-	map<int, set<uint8_t>> Chords;
+	map<int, uint8_t> Jacks, Stairs; /// Each Position has an offset to the very next Jack / Stair, it's 0 if too far.
+	map<int, set<uint8_t>> Chords; /// Each Position has a set containing the lanes which have a note at this Position.
 	set<int> Mines;
 
 	int8_t Press(const uint8_t Lane, const uint32_t Time, const uint8_t I){ return I; }
